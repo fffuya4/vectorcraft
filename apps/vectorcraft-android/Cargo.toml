@@ -1,0 +1,36 @@
+[package]
+name = "vectorcraft-android"
+description = "VectorCraft for Android: the shared egui app in a NativeActivity, with the system file picker behind Open, Save and Place"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+name = "vectorcraft_android"
+crate-type = ["cdylib", "rlib"]
+
+# The one place besides the desktop shells' platform code that needs `unsafe`: Android hands native
+# code raw JNI pointers (`JavaVM`, the activity), and the Rust JNI wrappers take them only through
+# `unsafe` constructors. `unsafe_code` is `deny` here; only `jni_bridge.rs` and the `android_main`
+# export allow it, each at one named site. See AGENTS.md ("Android exception").
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+cognitive_complexity = "deny"
+too_many_arguments = "deny"
+wildcard_imports = "deny"
+dbg_macro = "warn"
+todo = "warn"
+
+[target.'cfg(target_os = "android")'.dependencies]
+vectorcraft-engine = { workspace = true, features = ["bundled-fonts"] }
+vectorcraft-ui-egui = { workspace = true }
+eframe = { workspace = true, features = ["default_fonts", "wgpu", "android-native-activity", "links"] }
+egui = { workspace = true }
+log = { workspace = true }
+android-activity = { version = "0.6", features = ["native-activity"] }
+android_logger = "0.15"
+jni = "0.21"

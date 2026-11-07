@@ -139,3 +139,7 @@ When a task lands, update in the same PR: the area row in `docs/target-app-parit
 - Some workflow files here still run their own jobs. Don't add to them. Moving a job into craft-common-actions is its own task, never part of another PR, and the job stays here until a shared workflow runs it.
 
 New workspace crates include `[lints] workspace = true` in `Cargo.toml`. Production crate roots declare the crate-level lint attributes before modules; crate-level `//!` documentation may precede them.
+
+## Android exception to `unsafe_code = "forbid"`
+
+`apps/vectorcraft-android` is the only crate that may use `unsafe`: Android passes native code raw JNI pointers, and the JNI wrappers accept them only through `unsafe` constructors. The crate sets `unsafe_code = "deny"`; `jni_bridge.rs` and the `android_main` export allow it, each with a SAFETY comment. Keep new platform logic in Java (`android/java`) behind `FileBridge`'s string-in, string-out calls so this stays small.

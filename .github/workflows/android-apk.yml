@@ -1,0 +1,32 @@
+# Builds the Android APK of VectorCraft. For a fork: Actions → "Android APK" → Run workflow,
+# then download the artifact. (Upstream CI is shared; this file isn't part of that.)
+name: Android APK
+on:
+  workflow_dispatch:
+  push:
+    tags: ["android-v*"]
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+      - name: Install Android platform and build tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
+      - name: Install NDK
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
+      - name: Build
+        env:
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+        run: bash android/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vectorcraft-android-arm64
+          path: android/build/vectorcraft-*-android-arm64.apk
