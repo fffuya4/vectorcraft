@@ -402,6 +402,15 @@ impl<T: 'static> EventLoop<T> {
                             },
                         };
 
+                    let pointers: Vec<_> = pointers.collect();
+                    let tool = if pointers.iter().any(|p| matches!(p.tool_type(), android_activity::input::ToolType::Stylus | android_activity::input::ToolType::Eraser)) {
+                        1
+                    } else if pointers.iter().any(|p| matches!(p.tool_type(), android_activity::input::ToolType::Mouse)) {
+                        2
+                    } else {
+                        0
+                    };
+                    crate::platform::android::LAST_POINTER_TOOL.store(tool, Ordering::Relaxed);
                     for pointer in pointers {
                         let location =
                             PhysicalPosition { x: pointer.x() as _, y: pointer.y() as _ };

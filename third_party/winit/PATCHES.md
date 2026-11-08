@@ -228,3 +228,6 @@ qualification gates. Human review and merge are required.
   latest touch event, read from `MotionEvent::button_state()` in the Android backend. VectorCraft
   uses it as the Shift key. Only `src/platform/android.rs` and `src/platform_impl/android/mod.rs`
   changed; every other platform is untouched.
+- `platform::android::last_pointer_tool()`: whether the latest touch event came from a finger, a
+  stylus or a mouse (`Pointer::tool_type()`), so VectorCraft can ignore resting palms while a pen
+  is in use.

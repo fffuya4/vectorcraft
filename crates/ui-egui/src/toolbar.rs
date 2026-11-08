@@ -239,7 +239,11 @@ fn body(app: &mut VectorcraftApp, ui: &mut Ui, cols: usize, floating: Option<egu
                     };
                     let Some(shown) = tool_info(&shown_id).or_else(|| tool_info(slot[0])) else { continue };
                     let is_active = slot.contains(&active);
-                    let (rect, resp) = ui.allocate_exact_size(vec2(36.0, PITCH - 1.0), Sense::click_and_drag());
+                    // A finger or pen drags the tools' column to scroll it, so its buttons only sense
+                    // clicks (a button that senses drags would take the swipe and just pick the tool).
+                    // Edit Toolbar's drawer needs the drag to move a tool.
+                    let sense = if editing || crate::touch::source() == crate::touch::Source::Mouse { Sense::click_and_drag() } else { Sense::click() };
+                    let (rect, resp) = ui.allocate_exact_size(vec2(36.0, PITCH - 1.0), sense);
                     let well = egui::Rect::from_center_size(rect.center(), vec2(30.0, 27.5));
                     if is_active {
                         ui.painter().rect_filled(well, CornerRadius::same(6), t.tool_active);

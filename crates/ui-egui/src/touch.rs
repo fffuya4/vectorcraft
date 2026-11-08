@@ -32,6 +32,11 @@ thread_local! {
     static PEN_SEEN: Cell<bool> = const { Cell::new(false) };
 }
 
+/// What drives the pointer now.
+pub fn source() -> Source {
+    SOURCE.with(Cell::get)
+}
+
 /// The pointer's presses now come from `source`; a pen makes fingers navigate only from then on.
 pub fn set_source(source: Source) {
     SOURCE.with(|s| s.set(source));

@@ -194,3 +194,26 @@ pub fn stylus_button_pressed() -> bool {
 }
 
 pub(crate) static STYLUS_BUTTON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// What touched the screen in the latest touch event.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PointerTool {
+    /// A finger (or anything that isn't a stylus or mouse).
+    Finger,
+    /// A stylus (the S Pen), either end.
+    Stylus,
+    /// A mouse or trackpad.
+    Mouse,
+}
+
+/// The tool of the latest touch event: a stylus if any pointer in it was one. Added for VectorCraft
+/// (palm rejection while a pen is in use). See PATCHES.md.
+pub fn last_pointer_tool() -> PointerTool {
+    match LAST_POINTER_TOOL.load(std::sync::atomic::Ordering::Relaxed) {
+        1 => PointerTool::Stylus,
+        2 => PointerTool::Mouse,
+        _ => PointerTool::Finger,
+    }
+}
+
+pub(crate) static LAST_POINTER_TOOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);

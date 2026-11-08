@@ -20,7 +20,9 @@ bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
 android_jar="$ANDROID_HOME/platforms/android-$platform/android.jar"
 [ -f "$android_jar" ] || { echo "missing $android_jar (install platform android-$platform)" >&2; exit 1; }
 
-version="$(sed -n 's/^version = "\(.*\)"/\1/p' "$root/Cargo.toml" | head -1)"
+# The Android build's own version (android/VERSION): the app's version plus a bump for each port
+# release, so Android and the launcher see a new build as an update.
+version="$(tr -d '[:space:]' <"$here/VERSION")"
 IFS=. read -r major minor patch <<<"${version%%-*}"
 version_code=$((major * 10000 + minor * 100 + patch))
 

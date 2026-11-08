@@ -9,6 +9,7 @@ use std::time::Duration;
 use android_activity::AndroidApp;
 use vectorcraft_engine::Session;
 use vectorcraft_ui_egui::place::{PlaceArrival, PlaceInbox};
+use vectorcraft_ui_egui::touch::{self, Source};
 use vectorcraft_ui_egui::{Services, VectorcraftApp};
 
 use crate::jni_bridge::Java;
@@ -175,6 +176,13 @@ impl eframe::App for Shell {
         if self.shift_latched || winit::platform::android::stylus_button_pressed() {
             hold_shift(raw_input, ctx.input(|i| i.modifiers));
         }
+        // Tell the app what touches the screen. Once the pen has been used, fingers only navigate
+        // (pinch, two-finger pan, the undo and redo taps), so a resting palm never draws.
+        touch::set_source(match winit::platform::android::last_pointer_tool() {
+            winit::platform::android::PointerTool::Stylus => Source::Pen,
+            winit::platform::android::PointerTool::Finger => Source::Finger,
+            winit::platform::android::PointerTool::Mouse => Source::Mouse,
+        });
         self.app.raw_input_hook(ctx, raw_input);
     }
 
@@ -196,13 +204,20 @@ impl Shell {
         let pen = winit::platform::android::stylus_button_pressed();
         egui::Area::new(egui::Id::unique("android-shift-key"))
             .order(egui::Order::Foreground)
-            .fixed_pos(area.left_bottom() + egui::vec2(12.0, -64.0))
+            .fixed_pos(area.left_bottom() + egui::vec2(12.0, -116.0))
             .show(ctx, |ui| {
                 let on = self.shift_latched || pen;
                 let label = egui::RichText::new("⇧ Shift").size(18.0);
                 let button = egui::Button::new(label).selected(on).min_size(egui::vec2(96.0, 44.0));
                 if ui.add(button).on_hover_text("Hold Shift: keeps proportions, makes squares and circles. The S Pen button does the same.").clicked() {
                     self.shift_latched = !self.shift_latched;
+                }
+                ui.add_space(6.0);
+                let pen_only = touch::pen_seen();
+                let label = egui::RichText::new("✎ Pen only").size(18.0);
+                let button = egui::Button::new(label).selected(pen_only).min_size(egui::vec2(96.0, 44.0));
+                if ui.add(button).on_hover_text("Fingers only move and zoom the view; only the pen draws. Starts on once you use the pen.").clicked() {
+                    touch::set_pen_seen(!pen_only);
                 }
             });
     }

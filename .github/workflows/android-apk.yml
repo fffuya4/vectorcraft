@@ -42,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          version="$(tr -d '[:space:]' < android/VERSION)"
           cd android/build
           apk="vectorcraft-$version-android-arm64.apk"
           sha256sum "$apk" > SHA256SUMS.txt
