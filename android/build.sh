@@ -55,7 +55,7 @@ final="$out/vectorcraft-$version-android-arm64.apk"
 
 echo "== sign"
 if [ -n "${KEYSTORE:-}" ]; then
-  "$bt/apksigner" sign --ks "$KEYSTORE" --ks-pass "pass:${KEYSTORE_PASS:?}" --ks-key-alias "${KEY_ALIAS:?}" --out "$final" "$out/aligned.apk"
+  "$bt/apksigner" sign --ks "$KEYSTORE" --ks-type "${KEYSTORE_TYPE:-PKCS12}" --ks-pass "pass:${KEYSTORE_PASS:?}" --key-pass "pass:$KEYSTORE_PASS" --ks-key-alias "${KEY_ALIAS:?}" --out "$final" "$out/aligned.apk"
 else
   keytool -genkeypair -keystore "$out/debug.keystore" -storepass android -keypass android -alias debug \
     -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VectorCraft debug" >/dev/null 2>&1

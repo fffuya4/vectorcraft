@@ -29,9 +29,24 @@ jobs:
       - name: Install NDK
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          # Android only installs an update signed with the same key as the app already installed,
+          # so releases must always be signed with the one key kept in this repository's secrets.
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "KEYSTORE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=release" >> "$GITHUB_ENV"
+          elif [ "${{ github.event_name == 'workflow_dispatch' && inputs.publish }}" = "true" ]; then
+            echo "::error::Add the secrets ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASS first (Settings, Secrets and variables, Actions): without them every build gets a new random key and Android refuses to update the app."
+            exit 1
+          fi
       - name: Build
         env:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
         run: bash android/build.sh
       - uses: actions/upload-artifact@v4
         with:
