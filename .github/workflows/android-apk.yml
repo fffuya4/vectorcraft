@@ -1,8 +1,15 @@
 # Builds the Android APK of VectorCraft. For a fork: Actions → "Android APK" → Run workflow,
 # then download the artifact. (Upstream CI is shared; this file isn't part of that.)
 name: Android APK
+permissions:
+  contents: write
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the APK as a release of this fork (what the launcher installs from)"
+        type: boolean
+        default: true
   push:
     tags: ["android-v*"]
 jobs:
@@ -30,3 +37,15 @@ jobs:
         with:
           name: vectorcraft-android-arm64
           path: android/build/vectorcraft-*-android-arm64.apk
+      - name: Publish release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          cd android/build
+          apk="vectorcraft-$version-android-arm64.apk"
+          sha256sum "$apk" > SHA256SUMS.txt
+          gh release create "v$version" "$apk" SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" \
+            --title "VectorCraft $version (Android)" --notes "Android build of VectorCraft $version." \
+            || gh release upload "v$version" "$apk" SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"

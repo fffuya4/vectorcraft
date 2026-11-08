@@ -100,6 +100,8 @@ struct Shell {
     java: Arc<Java>,
     /// The system bars' and cut-outs' size in points: top, bottom, left, right.
     insets: [f32; 4],
+    /// The on-screen Shift key is latched on: the touch stand-in for holding Shift.
+    shift_latched: bool,
 }
 
 impl Shell {
@@ -139,7 +141,7 @@ impl Shell {
         app.session.libraries.set_dir(folder("Libraries"));
         app.session.recovery.set_default_folder(folder("Data Recovery"));
         vectorcraft_ui_egui::panels::library_panel::restore(&mut app);
-        Self { app, picks, java, insets: [0.0; 4] }
+        Self { app, picks, java, insets: [0.0; 4], shift_latched: false }
     }
 
     fn read_insets(&mut self, ctx: &egui::Context) {
@@ -168,6 +170,11 @@ impl eframe::App for Shell {
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        // Shift, without a keyboard: the S Pen's side button, or the on-screen Shift key. It keeps
+        // proportions when scaling and makes squares and circles, like the key does.
+        if self.shift_latched || winit::platform::android::stylus_button_pressed() {
+            hold_shift(raw_input, ctx.input(|i| i.modifiers));
+        }
         self.app.raw_input_hook(ctx, raw_input);
     }
 
@@ -178,6 +185,42 @@ impl eframe::App for Shell {
         let area = egui::Rect::from_min_max(full.min + egui::vec2(left, top), full.max - egui::vec2(right, bottom));
         let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(area));
         self.app.ui(&mut inner);
+        self.shift_key(ui.ctx(), area);
+    }
+}
+
+impl Shell {
+    /// The on-screen Shift key: tap to hold Shift down, tap again to let go. It sits at the lower
+    /// left, above the navigation bar, and shows that the S Pen's button is held too.
+    fn shift_key(&mut self, ctx: &egui::Context, area: egui::Rect) {
+        let pen = winit::platform::android::stylus_button_pressed();
+        egui::Area::new(egui::Id::unique("android-shift-key"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(area.left_bottom() + egui::vec2(12.0, -64.0))
+            .show(ctx, |ui| {
+                let on = self.shift_latched || pen;
+                let label = egui::RichText::new("⇧ Shift").size(18.0);
+                let button = egui::Button::new(label).selected(on).min_size(egui::vec2(96.0, 44.0));
+                if ui.add(button).on_hover_text("Hold Shift: keeps proportions, makes squares and circles. The S Pen button does the same.").clicked() {
+                    self.shift_latched = !self.shift_latched;
+                }
+            });
+    }
+}
+
+/// Puts Shift on the frame and on every pointer, key and wheel event in it, as a keyboard's Shift
+/// would be for a frame in which it is held. `current` keeps any other modifier a hardware
+/// keyboard holds.
+fn hold_shift(raw: &mut egui::RawInput, current: egui::Modifiers) {
+    let held = egui::Modifiers { shift: true, ..current };
+    raw.events.insert(0, egui::Event::ModifiersChanged(held));
+    for event in &mut raw.events {
+        match event {
+            egui::Event::PointerButton { modifiers, .. } | egui::Event::Key { modifiers, .. } | egui::Event::MouseWheel { modifiers, .. } => {
+                modifiers.shift = true;
+            }
+            _ => {}
+        }
     }
 }
 

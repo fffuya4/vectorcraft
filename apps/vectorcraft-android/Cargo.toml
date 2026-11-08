@@ -31,6 +31,7 @@ vectorcraft-ui-egui = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "android-native-activity", "links"] }
 egui = { workspace = true }
 log = { workspace = true }
+winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }
 android-activity = { version = "0.6", features = ["native-activity"] }
 android_logger = "0.15"
 jni = "0.21"
